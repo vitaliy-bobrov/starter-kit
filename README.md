@@ -1,6 +1,5 @@
 #Project starter kit
 
-[![Dependency Status](https://david-dm.org/vitaliy-bobrov/starter-kit.svg)](https://david-dm.org/vitaliy-bobrov/starter-kit)
 [![devDependency Status](https://david-dm.org/vitaliy-bobrov/starter-kit/dev-status.svg)](https://david-dm.org/vitaliy-bobrov/starter-kit#info=devDependencies)
 
 ## Features
