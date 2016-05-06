@@ -1,7 +1,7 @@
 #Project starter kit
 
-[![Dependency Status][david-badge]][david-badge-url]
-[![devDependency Status][david-dev-badge]][david-dev-badge-url]
+[![Dependency Status][david-badge]][https://david-dm.org/vitaliy-bobrov/starter-kit.svg]
+[![devDependency Status][david-dev-badge]][https://david-dm.org/vitaliy-bobrov/starter-kit.svg]
 
 ## Features
 - Using gulp 4.0
