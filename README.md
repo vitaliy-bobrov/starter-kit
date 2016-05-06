@@ -1,3 +1,8 @@
+#Project starter kit
+
+[![Dependency Status][david-badge]][david-badge-url]
+[![devDependency Status][david-dev-badge]][david-dev-badge-url]
+
 ## Features
 - Using gulp 4.0
 - BrowserSync
