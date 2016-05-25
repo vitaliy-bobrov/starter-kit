@@ -2,7 +2,7 @@
 ie >= 10
 ie_mob >= 10
 ff >= 42
-chrome >= 47
+chrome >= 48
 safari >= 7
 ios >= 7
 android >= 4.4
