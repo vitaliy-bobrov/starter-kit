@@ -174,7 +174,7 @@ const fonts = () => gulp.src(config.fonts.src)
 gulp.task('fonts', fonts);
 
 // Clean output directory
-const clean = () => del(['.tmp', `${config.destination}/*`], {dot: true});
+const clean = () => del(['.tmp', './dist/*', '!./dist/.git'], {dot: true});
 
 gulp.task('clean', clean);
 
