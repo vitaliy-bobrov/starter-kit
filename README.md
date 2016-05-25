@@ -14,7 +14,7 @@
 - WebP format support
 - Supportes IE10+ and last 2 version of major browsers
 
-## Instalation
+## Installation
 You can open "dist/index.html" in your browser or serve with broser sync.
 
 If you have gulp installed globally remove it and install culp-cli
