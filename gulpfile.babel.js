@@ -49,6 +49,29 @@ const imagemin = () => gulp.src(config.images.src.all)
 
 gulp.task('imagemin', imagemin);
 
+// Creates svg sprite.
+const svg = () => gulp.src(config.images.src.svg)
+  .pipe($.plumber({
+    errorHandler: onError
+  }))
+  .pipe($.svgSprite({
+    mode: {
+      defs: {
+        dest: './',
+        sprite: 'sprites/sprite.svg',
+        inline: true,
+        example: {
+          template: './src/images/sprites/template.html',
+          dest: 'sprites/sprite.defs.html'
+        }
+      }
+    }
+  }))
+  .pipe(gulp.dest('./src/images/'))
+  .pipe($.size({title: 'svg'}));
+
+gulp.task('svg', svg);
+
 // Generate images.
 gulp.task('images', gulp.series('webp', 'imagemin'));
 
@@ -138,11 +161,12 @@ const scripts = () => gulp.src(config.scripts.src)
 
 gulp.task('scripts', scripts);
 
-// Scan your HTML for assets & optimize them
-const html = () => gulp.src(config.html.src)
+// Injects svg sprite.
+const index = () => gulp.src(config.html.index)
   .pipe($.plumber({
     errorHandler: onError
   }))
+  .pipe($.injectFile())
   .pipe($.htmlmin({
     removeComments: true,
     collapseWhitespace: true,
@@ -157,11 +181,13 @@ const html = () => gulp.src(config.html.src)
   .pipe($.size({title: 'html', showFiles: true}))
   .pipe(gulp.dest(config.destination));
 
-gulp.task('html', html);
+gulp.task('index', index)
+
+gulp.task('inject', gulp.series('svg', 'index'));
 
 // Copy external libraries.
 const libraries = () => gulp.src(config.libraries.src)
-  .pipe($.copy(config.libraries.dist, {prefix: 4}))
+  .pipe($.copy(config.libraries.dist, {prefix: 5}))
   .pipe($.size({title: 'libraries'}));
 
 gulp.task('libraries', libraries);
@@ -209,7 +235,7 @@ gulp.task('serve:dist', serveDist);
 
 // Watch files change.
 const watch = () => {
-  gulp.watch([config.html.src], gulp.series('html', 'reload'));
+  gulp.watch([config.html.index, config.images.src.svg], gulp.series('inject', 'reload'));
   gulp.watch([config.images.src.all], gulp.series('images', 'reload'));
   gulp.watch([config.styles.src], gulp.series('styles', 'reload'));
   gulp.watch([config.scripts.src], gulp.series(gulp.parallel('lint', 'scripts'), 'reload'));
@@ -226,7 +252,7 @@ gulp.task('serve', gulp.series(
 // Build production files
 gulp.task('build', gulp.series(
     'clean',
-    gulp.parallel('libraries', 'fonts', 'html', 'styles', 'lint', 'scripts', 'icons', 'images', 'copy')
+    gulp.parallel('libraries', 'fonts', 'inject', 'styles', 'lint', 'scripts', 'icons', 'images', 'copy')
   )
 );
 

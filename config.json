@@ -2,14 +2,17 @@
 	"source": "./src",
 	"destination": "./dist",
 	"html": {
-		"src": ["./src/**/*.html", "!./src/libraries/**/*.html"]
+		"src": ["./src/**/*.html", "!./src/libraries/**/*.html"],
+		"index": "./src/index.html"
 	},
 	"scripts": {
 		"src": "./src/js/**/*.js",
 		"dist": "./dist/js"
 	},
 	"libraries": {
-		"src": ["./src/libraries/picturefill/dist/picturefill.min.js"],
+		"src": [
+			"./src/libraries/picturefill/dist/picturefill.min.js"
+		],
 		"dist": "./dist/js/vendor"
 	},
 	"fonts": {
@@ -22,9 +25,8 @@
 	},
 	"images": {
 		"src": {
-			"all": [
-				"./src/images/**/*.{jpg,jpeg,png,gif,svg}"
-			],
+			"all": "./src/images/**/*.{jpg,jpeg,png,gif}",
+			"svg": "./src/images/*.svg",
 			"towebp": "./src/images/**/*.{jpg,jpeg,png,gif}"
 		},
 		"dist": "./dist/images"
