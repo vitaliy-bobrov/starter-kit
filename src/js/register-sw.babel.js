@@ -4,6 +4,8 @@
   if ('serviceWorker' in navigator) {
     navigator.serviceWorker.register('/service-worker.js')
       .then(reg => {
+        console.info('Service Worker successfuly installed!');
+
         reg.onupdatefound = () => {
           let installingWorker = reg.installing;
 
