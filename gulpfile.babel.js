@@ -3,18 +3,18 @@
 import path from 'path';
 import gulp from 'gulp';
 import del from 'del';
+import swPrecache from 'sw-precache';
 import assets from 'postcss-assets';
 import autoprefixer from 'autoprefixer';
 import mqpacker from 'css-mqpacker';
 import mqkeyframes from 'postcss-mq-keyframes';
-import willChange from 'postcss-will-change';
-import flexbug from 'postcss-flexbugs-fixes';
 import gulpLoadPlugins from 'gulp-load-plugins';
+import bs from 'browser-sync';
 import pkg from './package.json';
 import config from './config.json';
 
 const $ = gulpLoadPlugins();
-const browserSync = require('browser-sync').create();
+const browserSync = bs.create()
 
 const reload = () => new Promise(resolve => {
   browserSync.reload();
@@ -22,7 +22,7 @@ const reload = () => new Promise(resolve => {
 });
 
 gulp.task('reload', reload);
-
+ // Simple error handler.
 function onError(error) {
   console.log(error.toString());
   this.emit('end');
@@ -30,7 +30,7 @@ function onError(error) {
 
 // Generate webp images.
 const webp = () => gulp.src(config.images.src.towebp)
-  .pipe($.webp())
+  .pipe($.cache($.webp()))
   .pipe(gulp.dest(config.images.dist));
 
 gulp.task('webp', webp);
@@ -39,10 +39,7 @@ gulp.task('webp', webp);
 const imagemin = () => gulp.src(config.images.src.all)
   .pipe($.cache($.imagemin({
     progressive: true,
-    interlaced: true,
-    svgoPlugins: [
-      {removeViewBox: false}
-    ],
+    interlaced: true
   })))
   .pipe(gulp.dest(config.images.dist))
   .pipe($.size({title: 'images'}));
@@ -104,9 +101,7 @@ const styles = () => {
       loadPaths: ['images/'],
       cachebuster: true
     }),
-    flexbug,
-    willChange,
-    autoprefixer({cascade: false}),
+    autoprefixer,
     mqpacker({sort: true}),
     mqkeyframes
   ];
@@ -131,7 +126,8 @@ const styles = () => {
     })))
     .pipe($.size({title: 'styles'}))
     .pipe($.sourcemaps.write('./'))
-    .pipe(gulp.dest(config.styles.dist));
+    .pipe(gulp.dest(config.styles.dist))
+    .pipe($.if(browserSync.active, browserSync.stream({ match: '**/*.css' })));
 };
 
 gulp.task('styles', styles);
@@ -139,7 +135,8 @@ gulp.task('styles', styles);
 // Lint JavaScript.
 const lint = () => gulp.src(config.scripts.src)
   .pipe($.eslint())
-  .pipe($.eslint.format());
+  .pipe($.eslint.format())
+  .pipe($.if(!browserSync.active, $.eslint.failOnError()));
 
 gulp.task('lint', lint);
 
@@ -152,8 +149,8 @@ const scripts = () => gulp.src(config.scripts.src)
   .pipe($.sourcemaps.init())
   .pipe($.babel())
   .pipe($.sourcemaps.write())
-  .pipe($.concat('main.min.js'))
   .pipe(gulp.dest('.tmp/js'))
+  .pipe($.concat('main.min.js'))
   .pipe($.uglify({preserveComments: 'some'}))
   .pipe($.size({title: 'scripts'}))
   .pipe($.sourcemaps.write('.'))
@@ -161,7 +158,7 @@ const scripts = () => gulp.src(config.scripts.src)
 
 gulp.task('scripts', scripts);
 
-// Injects svg sprite.
+// HTML process.
 const index = () => gulp.src(config.html.index)
   .pipe($.plumber({
     errorHandler: onError
@@ -183,6 +180,7 @@ const index = () => gulp.src(config.html.index)
 
 gulp.task('index', index)
 
+// Injects inline svg sprite.
 gulp.task('inject', gulp.series('svg', 'index'));
 
 // Copy external libraries.
@@ -207,10 +205,11 @@ gulp.task('clean', clean);
 // Watch files for changes & reload
 const serveSrc = () => new Promise(resolve => {
   browserSync.init({
+    notify: false,
     logPrefix: 'BrowserSync',
     scrollElementMapping: ['main'],
-    server: ['.tmp', config.source],
-    port: 7007
+    server: ['.tmp', config.source, config.destination],
+    port: 8087
   });
 
   resolve();
@@ -221,11 +220,10 @@ gulp.task('serve:src', serveSrc);
 // Build and serve the output from the dist build
 const serveDist = () => new Promise(resolve => {
   browserSync.init({
-    notify: false,
     logPrefix: 'BrowserSync',
     scrollElementMapping: ['main'],
     server: config.destination,
-    port: 7007
+    port: 8087
   });
 
   resolve();
@@ -233,18 +231,54 @@ const serveDist = () => new Promise(resolve => {
 
 gulp.task('serve:dist', serveDist);
 
+const copySW = () => gulp.src([
+    'node_modules/sw-toolbox/sw-toolbox.js',
+    'src/js/sw/runtime-caching.js'
+  ])
+  .pipe(gulp.dest(config.scripts.sw));
+
+// Copy over the scripts that are used in importScripts as part of the generate-sw task.
+gulp.task('copy-sw', copySW);
+
+const generateSW = () => {
+  const rootDir = config.destination;
+  const filepath = path.join(rootDir, 'service-worker.js');
+
+  return swPrecache.write(filepath, {
+    // Used to avoid cache conflicts when serving on localhost.
+    cacheId: pkg.name || 'starter-kit',
+    // sw-toolbox.js needs to be listed first. It sets up methods used in runtime-caching.js.
+    importScripts: [
+      'js/sw/sw-toolbox.js',
+      'js/sw/runtime-caching.js'
+    ],
+    staticFileGlobs: [
+      // Add/remove glob patterns to match your directory setup.
+      `${rootDir}/images/**/*`,
+      `${rootDir}/js/**/*.js`,
+      `${rootDir}/css/**/*.css`,
+      `${rootDir}/*.{html,json}`
+    ],
+    stripPrefix: `${rootDir}/`
+  });
+};
+
+// Generates Service Worker for caching.
+gulp.task('generate-sw', generateSW);
+
+gulp.task('sw', gulp.series('copy-sw', 'generate-sw'));
+
 // Watch files change.
 const watch = () => {
   gulp.watch([config.html.index, config.images.src.svg], gulp.series('inject', 'reload'));
   gulp.watch([config.images.src.all], gulp.series('images', 'reload'));
-  gulp.watch([config.styles.src], gulp.series('styles', 'reload'));
+  gulp.watch([config.styles.src], gulp.series('styles'));
   gulp.watch([config.scripts.src], gulp.series(gulp.parallel('lint', 'scripts'), 'reload'));
 };
 
 gulp.task('watch', watch);
 
 gulp.task('serve', gulp.series(
-  gulp.parallel('scripts', 'styles'),
   'serve:src',
   'watch'
 ));
@@ -252,9 +286,12 @@ gulp.task('serve', gulp.series(
 // Build production files
 gulp.task('build', gulp.series(
     'clean',
-    gulp.parallel('libraries', 'fonts', 'inject', 'styles', 'lint', 'scripts', 'icons', 'images', 'copy')
+    gulp.parallel('libraries', 'fonts', 'inject', 'styles', 'lint', 'scripts', 'sw', 'icons', 'images', 'copy')
   )
 );
+
+// Development server.
+gulp.task('dev', gulp.series('build', 'serve'))
 
 // Default task.
 gulp.task('default', gulp.series('build', 'serve:dist', 'watch'));

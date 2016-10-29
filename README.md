@@ -12,6 +12,8 @@
 - A11Y
 - Picture element for images
 - WebP format support
+- Inline SVG sprites
+- Service Worker pre-cahing
 - Supportes IE10+ and last 2 version of major browsers
 
 ## Installation
@@ -24,7 +26,7 @@ npm rm -g gulp
 npm i -g gulp-cli
 ```
 
-Then install npm dependencies and run default task whitch build project from sorce files and serve in you browser (http://localhost:7007/)
+Then install npm dependencies and run default task whitch build project from sorce files and serve in you browser (http://localhost:8087/)
 
 ```bash
 npm i

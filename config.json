@@ -6,8 +6,9 @@
 		"index": "./src/index.html"
 	},
 	"scripts": {
-		"src": "./src/js/**/*.js",
-		"dist": "./dist/js"
+		"src": ["./src/js/**/*.js", "!./src/js/sw/**/*.js"],
+		"dist": "./dist/js",
+		"sw": "./dist/js/sw"
 	},
 	"libraries": {
 		"src": [
@@ -20,7 +21,7 @@
 		"dist": "./dist/fonts"
 	},
 	"styles": {
-		"src": "./src/scss/**/*.{scss,sass}",
+		"src": "./src/scss/**/*.{scss,css}",
 		"dist": "./dist/css"
 	},
 	"images": {
